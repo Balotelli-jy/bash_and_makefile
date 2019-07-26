@@ -1,0 +1,37 @@
+#!bin/bash
+
+#全局变量区
+let filenum=0
+let dirnum=0
+let objfile=0
+
+#定义一个函数fun_directory:统计当前路径下文件夹和文件个数
+fun_directory() {      
+  
+	for i in $( ls )
+	do
+	   if [ -d $i ]
+	   then
+		  let dirnum+=1
+	   else
+		  let filenum+=1
+		  suffix_check $i
+	   fi
+	done
+ 
+	echo "There are ${dirnum} directorys"
+	echo "There are $filenum files, and  ${objfile} c files"
+ 
+}
+
+#目标格式文件统计函数：以test测试文件后缀方式
+function suffix_check() {
+	if [[ "${1##*.}" == "c" ]]	#如果文件后缀等于c
+	then
+		((objfile+=1))
+	fi
+}
+
+#调用函数
+fun_directory
+
