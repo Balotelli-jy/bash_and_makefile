@@ -1,0 +1,100 @@
+#!bin/bash
+
+#全局变量区
+count=0
+path=/mnt/sda/sda1/log
+procpath=/proc/msp/
+killpid=0
+
+#文件存储路径
+rm -rf ${path}
+mkdir -p ${path}
+
+#while循环
+function always_check() {
+	while (( count < 10 ))
+	do
+		let count+=1
+		avproc_check
+		sleep 1
+		echo "Script catch proc time:${count}"
+	done
+}
+
+#检测音视频编解码相关设备节点
+function avproc_check() {
+
+	#遍历所有的设备节点
+	for i in $( ls ${procpath})
+	do
+		case $i in
+			"avplay00")
+				cat ${procpath}${i} >> ${path}/proc.log
+				;;
+			"sync00")
+				cat ${procpath}${i} >> ${path}/proc.log
+				;;
+			"adec00")
+				cat ${procpath}${i} >> ${path}/proc.log
+				;;
+			"sound0")
+				cat ${procpath}${i} >> ${path}/proc.log
+				;;
+			"vdec00")
+				cat ${procpath}${i} >> ${path}/proc.log
+				;;				
+		esac
+
+		#如果omx相关节点存在
+		if [ ${i:0:4} = "omx" ]
+		then
+			cat ${procpath}${i} >> ${path}/proc.log
+		fi
+	done
+}
+
+#基本信息抓取
+function system_check() {
+
+	for i in $( ls ${procpath})
+	do
+		#获取系统信息
+		if [ ${i} = "sys" ]
+		then
+			cat ${procpath}${i} >> ${path}/proc.log
+		fi
+		
+		#获取HDMI对端设备能力信息
+		if [ ${i} = "hdmi0_sink" ]
+		then
+			cat ${procpath}${i} >> ${path}/proc.log
+		fi
+
+	done
+}
+
+#获取系统property
+function property_check(){
+	getprop >> ${path}/prop.log
+}
+
+#kill后台进程
+function kill_thread(){
+	killpid=$(ps | grep logcat)
+	killpid=${killpid// /}
+	killpid=${killpid:4:4}
+	kill -9 $killpid	
+}
+
+#全局函数封装
+function catch_all(){
+	echo "JZ Script beggin~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" >> ${path}/proc.log
+	$(adb logcat -v threadtime > ${path}/logcat.log) &
+	property_check
+	system_check
+	always_check
+	kill_thread
+	echo "JZ Script end~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" >> ${path}/proc.log
+}
+
+catch_all
